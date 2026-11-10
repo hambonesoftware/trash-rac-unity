@@ -15,7 +15,7 @@ Milo’s Market stacks empty cartons by the dumpster for the morning recycling p
 2. Add this repository’s root as a project in Unity Hub.
 3. Open `Assets/Scenes/BackAlley.unity` and press Play.
 
-`AlleyArt.cs` assembles the alley, dumpster, and characters from meshes. `AlleyGame.cs` runs the round and tracks which cartons support each stack. `AlleyToon.shader` renders the three lighting bands and ink outlines.
+`AlleyArt.cs` and `AlleyScenery.cs` assemble the alley and props. `AlleyCharacters.cs` builds and poses the raccoon and stock clerk rigs. `AlleyEffects.cs` draws the comic bursts and cardboard scraps. `AlleyGame.cs` runs the round and tracks which cartons support each stack. `AlleyToon.shader` renders the lighting bands, ink outlines, and stockroom spill. The models and poses are generated in Unity and require no external art or animation downloads.
 
 ## Build the web edition
 

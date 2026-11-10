@@ -7,7 +7,7 @@ namespace TrashRac
     {
         private const int CartonLayer = 8;
         private static readonly Vector3 ThrowOrigin = new(-6.7f, 1.28f, 0);
-        private static readonly Vector3 Peek = new(-7.18f, 0, 0);
+        private static readonly Vector3 Peek = new(-7.04f, 0, -0.06f);
         private static readonly Vector3 Duck = new(-7.95f, 0, 0.07f);
         private static readonly Color Ink = AlleyArt.Tint("20192d");
         private static readonly Color Cream = AlleyArt.Tint("fff0d4");
@@ -46,6 +46,7 @@ namespace TrashRac
         private readonly Transform[] trail = new Transform[12];
 
         private AlleyArt art;
+        private AlleyEffects effects;
         private Camera board;
         private Transform props;
         private Transform debris;
@@ -64,6 +65,8 @@ namespace TrashRac
         private float nextVisit;
         private float visitStart = -1;
         private float flash;
+        private float lidRattle;
+        private float crouch;
         private float toss;
         private bool placed;
         private bool scanned;
@@ -73,7 +76,7 @@ namespace TrashRac
         private void Awake()
         {
             Application.targetFrameRate = 60;
-            board = AlleyArt.Group("Board camera", new Vector3(0, 7.0f, -22), transform).gameObject.AddComponent<Camera>();
+            board = AlleyArt.Group("Board camera", new Vector3(-0.48f, 7.7f, -22), transform).gameObject.AddComponent<Camera>();
             board.transform.LookAt(new Vector3(0, 2.95f, 0));
             board.orthographic = true;
             board.orthographicSize = 5.7f;
@@ -84,6 +87,7 @@ namespace TrashRac
 
             art = new AlleyArt();
             art.Build(AlleyArt.Group("Back alley scenery", Vector3.zero, transform));
+            effects = new AlleyEffects(art, AlleyArt.Group("Comic effects", Vector3.zero, transform));
             for (int i = 0; i < trail.Length; i++)
                 trail[i] = art.Part(PrimitiveType.Sphere, "Aim dot", transform, Vector3.zero,
                     Vector3.one * (i % 3 == 0 ? 0.08f : 0.052f), "f4d7a3", 0, 1);
@@ -110,6 +114,8 @@ namespace TrashRac
             nextVisit = 6.5f;
             visitStart = -1;
             flash = 0;
+            lidRattle = 0;
+            crouch = 0;
             toss = 0;
             hidden = false;
             shot = null;
@@ -123,7 +129,10 @@ namespace TrashRac
                 for (int i = 0; i < stack.StartCount; i++) AddCarton(stack);
             }
             art.Raccoon.position = Peek;
-            art.Raccoon.localScale = Vector3.one;
+            art.Raccoon.localScale = new Vector3(1.18f, 1.18f, 1.18f);
+            art.PoseRaccoon(0, 0, 0, 0);
+            art.CanLid.localRotation = Quaternion.identity;
+            effects.Clear();
             art.Worker.gameObject.SetActive(false);
             SetDoor(false);
             phase = state;
@@ -153,6 +162,9 @@ namespace TrashRac
         private void Collapse(Stack stack, int first)
         {
             int count = stack.Cartons.Count - first;
+            Vector3 impact = stack.Cartons[first].position;
+            effects.Pop(AlleyEffects.Cue.Stack, impact + new Vector3(0.1f, 1.0f, -1.5f));
+            effects.Scatter(impact, count);
             for (int i = stack.Cartons.Count - 1; i >= first; i--)
             {
                 Transform box = stack.Cartons[i];
@@ -182,6 +194,9 @@ namespace TrashRac
                 : new Rect(0, (1 - aspect / targetAspect) * 0.5f, 1, aspect / targetAspect);
             board.aspect = targetAspect;
 
+            float dt = Mathf.Min(Time.deltaTime, 0.1f);
+            effects.Update(dt);
+
             if (phase != Phase.Playing)
             {
                 if (Input.GetKeyDown(KeyCode.Return)) ResetBoard(Phase.Playing);
@@ -200,9 +215,9 @@ namespace TrashRac
             if (Input.GetMouseButtonDown(0) && CanAimAt(Input.mousePosition) || Input.GetKeyDown(KeyCode.Return))
                 ThrowTrash();
 
-            float dt = Mathf.Min(Time.deltaTime, 0.1f);
             clock += dt;
             flash = Mathf.Max(0, flash - dt);
+            lidRattle = Mathf.Max(0, lidRattle - dt);
             toss = Mathf.Max(0, toss - dt);
             UpdateRaccoon(dt);
             UpdateShot(dt);
@@ -315,6 +330,11 @@ namespace TrashRac
         private void ToggleHide()
         {
             hidden = !hidden;
+            if (hidden)
+            {
+                lidRattle = 0.31f;
+                effects.Pop(AlleyEffects.Cue.Duck, art.Can.position + new Vector3(-0.15f, 1.58f, -0.36f));
+            }
             if (incoming != null)
                 Say(hidden ? "Stay down until the box passes." : "Incoming box! Hide!", !hidden);
             else if (visitStart >= 0)
@@ -326,11 +346,12 @@ namespace TrashRac
         private void UpdateRaccoon(float dt)
         {
             float blend = 1 - Mathf.Exp(-22 * dt);
+            crouch = Mathf.Lerp(crouch, hidden ? 1 : 0, blend);
             art.Raccoon.position = Vector3.Lerp(art.Raccoon.position, hidden ? Duck : Peek, blend);
-            art.Raccoon.localScale = Vector3.Lerp(art.Raccoon.localScale,
-                hidden ? new Vector3(1, 0.63f, 1) : Vector3.one, blend);
-            art.RaccoonArm.localRotation = Quaternion.Euler(0, 0, hidden ? -38 : 15 + Mathf.Sin(toss * Mathf.PI / 0.25f) * 60);
-            art.Can.localRotation = Quaternion.Euler(0, 0, flash * Mathf.Sin(flash * 72) * 15);
+            art.Raccoon.localScale = new Vector3(1.18f + 0.14f * crouch, 1.18f - 0.58f * crouch, 1.18f);
+            float throwPose = Mathf.SmoothStep(0, 1, toss / 0.16f) * (1 - crouch);
+            art.PoseRaccoon(clock, crouch, throwPose, flash / 0.28f);
+            art.CanLid.localRotation = Quaternion.Euler(0, 0, lidRattle * Mathf.Sin(lidRattle * 61) * 35);
         }
 
         private void SetDoor(bool open)
@@ -338,6 +359,7 @@ namespace TrashRac
             art.Door.localRotation = Quaternion.Euler(0, open ? -83 : 0, 0);
             art.DoorLight.gameObject.SetActive(open);
             art.DoorSpill.gameObject.SetActive(open);
+            Shader.SetGlobalFloat("_StockroomWake", open ? 1 : 0);
         }
 
         private void BeginVisit()
@@ -368,15 +390,23 @@ namespace TrashRac
             const float check = 2.12f;
             const float throwAt = 2.70f;
             float age = clock - visitStart;
+            float doorSwing = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(0, 0.27f, age))
+                * Mathf.SmoothStep(0, 1, Mathf.InverseLerp(end, end - 0.26f, age));
+            art.Door.localRotation = Quaternion.Euler(0, -83 * doorSwing, 0);
             float walk = age < 1.5f ? Mathf.InverseLerp(0.32f, 1.5f, age) : 1 - Mathf.InverseLerp(leave, end, age);
+            float stride = Mathf.Sin(walk * Mathf.PI);
             Stack stack = stacks[workerStack];
             Vector3 doorway = new(-3.72f, 0, 1.73f);
             Vector3 drop = new(stack.X - 0.92f, 0, -0.82f);
             art.Worker.position = Vector3.Lerp(doorway, drop, walk)
-                + Vector3.up * (Mathf.Sin(walk * 17) * Mathf.Sin(walk * Mathf.PI) * 0.12f);
+                + Vector3.up * (Mathf.Abs(Mathf.Sin(age * 15)) * stride * 0.084f);
             art.Worker.gameObject.SetActive(age >= 0.28f);
-            art.Worker.localRotation = Quaternion.Euler(0, age < 1.5f ? -22 : 22, 0);
-            art.WorkerArm.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, -82, Mathf.InverseLerp(check, throwAt, age)));
+            art.Worker.localRotation = Quaternion.Euler(0, age < 1.5f ? -32 : 23, 0);
+            bool preparing = scanned && art.WorkerBox.gameObject.activeSelf;
+            float windup = preparing ? Mathf.SmoothStep(0, 1, Mathf.InverseLerp(check, throwAt - 0.08f, age)) : 0;
+            float release = preparing && age >= throwAt ? 1 : incoming == null ? 0 : Mathf.Clamp01(1 - (age - throwAt) * 5);
+            float lift = Mathf.Sin(Mathf.InverseLerp(1.31f, 1.78f, age) * Mathf.PI);
+            art.PoseWorker(age, stride, lift, windup, release, !placed, age >= 1.5f && age < leave);
 
             if (!placed && age >= 1.5f)
             {
@@ -396,6 +426,7 @@ namespace TrashRac
                 if (!hidden)
                 {
                     art.WorkerBox.gameObject.SetActive(true);
+                    effects.Pop(AlleyEffects.Cue.Spotted, art.Worker.position + new Vector3(0, 2.6f, -0.6f));
                     Say("Spotted! Duck before the box lands!", true);
                 }
             }
@@ -403,7 +434,7 @@ namespace TrashRac
             if (age >= throwAt && art.WorkerBox.gameObject.activeSelf)
             {
                 art.WorkerBox.gameObject.SetActive(false);
-                Vector3 from = art.Worker.position + new Vector3(-0.61f, 1.52f, -0.28f);
+                Vector3 from = art.WorkerBox.position;
                 incoming = new Projectile
                 {
                     From = from, Target = new Vector3(-7.04f, 0.95f, -0.43f), Arc = 0.93f, Duration = 0.61f,
@@ -413,15 +444,24 @@ namespace TrashRac
 
             if (incoming != null)
             {
+                Vector3 destination = hidden ? art.Can.position + new Vector3(0.23f, 1.13f, 0.07f)
+                    : new Vector3(-7.04f, 0.95f, -0.43f);
+                incoming.Target = Vector3.Lerp(incoming.Target, destination, Mathf.Clamp01(dt * 15));
                 MoveProjectile(incoming, dt);
                 if (incoming.Age >= incoming.Duration)
                 {
                     Destroy(incoming.Prop.gameObject);
                     incoming = null;
-                    flash = 0.24f;
-                    if (hidden) Say("Clang! The trash can blocked the box.");
+                    if (hidden)
+                    {
+                        lidRattle = 0.58f;
+                        effects.Pop(AlleyEffects.Cue.Cover, art.Can.position + new Vector3(0.62f, 1.65f, -0.55f));
+                        Say("Clang! The trash can blocked the box.");
+                    }
                     else
                     {
+                        flash = 0.28f;
+                        effects.Pop(AlleyEffects.Cue.Hit, destination + new Vector3(0.25f, 1.02f, -0.55f));
                         health--;
                         Say("Ouch! A box hit you.", true);
                         if (health == 0) End(Phase.Lost);
