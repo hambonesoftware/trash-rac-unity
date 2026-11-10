@@ -45,7 +45,7 @@ const loading = document.getElementById("loading");
 const progress = document.getElementById("progress");
 const fullscreen = document.getElementById("fullscreen");
 const loader = document.createElement("script");
-loader.src = "Build/Web.loader.js";
+loader.src = "Build/1a7f73a85dd4e94c2f2d41ee270183c0.loader.js";
 
 function showError() {
   document.getElementById("loading-label").textContent = "The game could not load. Try refreshing in a WebGL 2-capable browser.";
@@ -55,9 +55,9 @@ function showError() {
 loader.onerror = showError;
 loader.onload = () => {
   createUnityInstance(canvas, {
-    dataUrl: "Build/Web.data.unityweb",
-    frameworkUrl: "Build/Web.framework.js.unityweb",
-    codeUrl: "Build/Web.wasm.unityweb",
+    dataUrl: "Build/be00ffbdca2e70ff008d3f4f00ced855.data.unityweb",
+    frameworkUrl: "Build/13f0dd990804b42d1efa2471e376325c.framework.js.unityweb",
+    codeUrl: "Build/f26fd242fc514ac6053825c85ca3832b.wasm.unityweb",
     streamingAssetsUrl: "StreamingAssets",
     companyName: "Hambone Software",
     productName: "Trash Rac",
