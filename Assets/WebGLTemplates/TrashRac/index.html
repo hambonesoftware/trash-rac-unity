@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#171323">
+<meta name="description" content="A cel-shaded arcade raid behind Milo's Market. Topple the boxes, duck from the stock crew, and claim your dumpster dinner.">
+<title>Trash Rac · Back Alley Rumble</title>
+<style>
+  :root{color-scheme:dark;font:16px system-ui,sans-serif;background:#171323;color:#fff0d4}
+  body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#342741,transparent 67%)}
+  main{width:min(1152px,calc(100% - 32px));margin:auto;padding:24px 0}
+  header,footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header{margin-bottom:12px}
+  footer{margin-top:12px}
+  p{margin:0}
+  .label,a,button{font:700 .7rem/1.3 ui-monospace,Consolas,monospace;letter-spacing:.11em}
+  .label{color:#ffc196}
+  .frame{position:relative;border:1px solid #786078;border-radius:11px;overflow:hidden;box-shadow:0 18px 70px #0c0917aa;background:#20192d}
+  canvas{display:block;width:100%;aspect-ratio:16/9;touch-action:none}
+  canvas:focus-visible{outline:2px solid #e3ed9f;outline-offset:-3px}
+  .loading{position:absolute;inset:0;display:grid;place-content:center;gap:10px;text-align:center;background:#20192d;padding:12px}
+  .loading[hidden]{display:none}
+  progress{width:min(240px,65vw);height:10px;margin:auto;accent-color:#e3ed9f}
+  a,button{color:#e3ed9f}
+  button{border:1px solid #786078;border-radius:5px;background:#312640;padding:7px 11px;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .frame:fullscreen{border:0;border-radius:0;display:grid;place-items:center;background:#20192d}
+  .frame:fullscreen canvas{width:min(100vw,177.78vh)}
+</style>
+</head>
+<body>
+<main>
+  <header><p class="label">AFTER-HOURS ARCADE &nbsp;/&nbsp; UNITY WEB EDITION</p><button id="fullscreen" type="button" disabled>FULL SCREEN</button></header>
+  <div class="frame" id="frame">
+    <canvas id="unity-canvas" width={{{ WIDTH }}} height={{{ HEIGHT }}} tabindex="0" aria-label="Trash Rac game board. Click to aim and throw, and press Space to duck. Arrow keys and Enter also work."></canvas>
+    <div class="loading" id="loading" role="status"><p class="label" id="loading-label">OPENING THE ALLEY…</p><progress id="progress" max="1" value="0" aria-label="Loading game"></progress></div>
+  </div>
+  <footer><p class="label">CLICK TO THROW &nbsp;·&nbsp; SPACE TO DUCK</p><a href="https://github.com/hambonesoftware/trash-rac-unity">UNITY SOURCE</a></footer>
+</main>
+<script>
+const canvas = document.getElementById("unity-canvas");
+const frame = document.getElementById("frame");
+const loading = document.getElementById("loading");
+const progress = document.getElementById("progress");
+const fullscreen = document.getElementById("fullscreen");
+const loader = document.createElement("script");
+loader.src = "Build/{{{ LOADER_FILENAME }}}";
+
+function showError() {
+  document.getElementById("loading-label").textContent = "The game could not load. Try refreshing in a WebGL 2-capable browser.";
+  progress.hidden = true;
+}
+
+loader.onerror = showError;
+loader.onload = () => {
+  createUnityInstance(canvas, {
+    dataUrl: "Build/{{{ DATA_FILENAME }}}",
+    frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+    codeUrl: "Build/{{{ CODE_FILENAME }}}",
+    streamingAssetsUrl: "StreamingAssets",
+    companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+    productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+    productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+    devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5)
+  }, value => { progress.value = value; }).then(() => {
+    loading.hidden = true;
+    fullscreen.disabled = !frame.requestFullscreen;
+    canvas.focus({ preventScroll: true });
+  }).catch(error => {
+    console.error(error);
+    showError();
+  });
+};
+
+canvas.addEventListener("pointerdown", () => canvas.focus({ preventScroll: true }));
+fullscreen.addEventListener("click", async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await frame.requestFullscreen();
+    canvas.focus({ preventScroll: true });
+  } catch (error) {
+    console.warn("Full screen is unavailable", error);
+  }
+});
+document.body.appendChild(loader);
+</script>
+</body>
+</html>
