@@ -200,7 +200,7 @@ namespace TrashRac
             if (Input.GetMouseButtonDown(0) && CanAimAt(Input.mousePosition) || Input.GetKeyDown(KeyCode.Return))
                 ThrowTrash();
 
-            float dt = Mathf.Min(Time.deltaTime, 0.05f);
+            float dt = Mathf.Min(Time.deltaTime, 0.1f);
             clock += dt;
             flash = Mathf.Max(0, flash - dt);
             toss = Mathf.Max(0, toss - dt);
@@ -460,7 +460,8 @@ namespace TrashRac
         {
             GUI.Label(rect, value, new GUIStyle(GUI.skin.label)
             {
-                font = font, fontSize = size, fontStyle = FontStyle.Bold, alignment = align, normal = { textColor = color }
+                font = font, fontSize = size, fontStyle = FontStyle.Bold, alignment = align,
+                wordWrap = false, normal = { textColor = color }
             });
         }
 
@@ -484,7 +485,7 @@ namespace TrashRac
 
             Panel(new Rect(0, 0, 1280, 65), Ink);
             Panel(new Rect(0, 64, 1280, 2), AlleyArt.Tint("725465"));
-            Text(new Rect(26, 5, 210, 51), "TRASH RAC", 33, Lime);
+            Text(new Rect(26, 5, 220, 51), "TRASH RAC", 29, Lime);
             Text(new Rect(250, 5, 325, 51), "01   BACK ALLEY RUMBLE", 19, Cream);
             Text(new Rect(685, 6, 90, 50), "HEALTH", 17, Cream);
             for (int i = 0; i < 3; i++) Panel(new Rect(776 + i * 19, 26, 13, 14), i < health ? Peach : AlleyArt.Tint("584252"));
