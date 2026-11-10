@@ -18,6 +18,7 @@ namespace TrashRac.Editor
             PlayerSettings.companyName = "Hambone Software";
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             PlayerSettings.WebGL.decompressionFallback = true;
+            UnityEditor.WebGL.UserBuildSettings.codeOptimization = UnityEditor.WebGL.WasmCodeOptimization.BuildTimes;
             PlayerSettings.WebGL.template = "PROJECT:TrashRac";
             PlayerSettings.defaultWebScreenWidth = 1280;
             PlayerSettings.defaultWebScreenHeight = 720;

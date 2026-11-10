@@ -40,9 +40,8 @@ namespace TrashRac
             part.transform.SetParent(parent, false);
             part.transform.localPosition = at;
             part.transform.localScale = scale;
-            if (!collider)
+            if (!collider && part.TryGetComponent(out Collider component))
             {
-                Collider component = part.GetComponent<Collider>();
                 component.enabled = false;
                 Object.Destroy(component);
             }
@@ -84,12 +83,12 @@ namespace TrashRac
                 new Vector3(60, 0.3f, 38), "40364e", 0, 0.55f, true);
 
             var skyline = Group("Skyline", Vector3.zero, root);
-            Part(PrimitiveType.Sphere, "Moon", skyline, new Vector3(10.3f, 9.4f, 14),
+            Part(PrimitiveType.Sphere, "Moon", skyline, new Vector3(8.4f, 4.65f, 14),
                 Vector3.one * 1.35f, "ffd49a", 0.018f, 1);
             for (int i = 0; i < 32; i++)
             {
                 float x = (i * 17 % 61) * 0.49f - 15;
-                float y = 5.9f + (i * 13 % 29) * 0.17f;
+                float y = 3.15f + (i * 13 % 29) * 0.072f;
                 Part(PrimitiveType.Sphere, "Star", skyline, new Vector3(x, y, 17),
                     Vector3.one * (i % 5 == 0 ? 0.055f : 0.027f), "d8bcb5", 0, 1);
             }
